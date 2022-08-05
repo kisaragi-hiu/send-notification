@@ -13,7 +13,21 @@ This serves as both a library for sending desktop notifications with zero config
    :repo "kisaragi-hiu/send-notification"))
 ```
 
-## Setup
+## Usage
+
+### As a library
+
+The entry point is `send-notification`.
+
+```elisp
+(send-notification "Some text")
+```
+
+Keyword arguments:
+
+- `:body`: the body text of the notification.
+- `:app-name`: defaults to Emacs
+- `:icon`: only works for notify-send, an icon name to pass to it
 
 ### Startup notification
 

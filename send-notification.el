@@ -44,7 +44,14 @@ The notification ideally looks something like:
   SUMMARY
   BODY
 
-Supports `notify-send', `termux-notification', and `osascript'."
+Supports:
+
+- platforms with `notify-send',
+- Termux (through `termux-notification')
+- (untested) macOS (through `osascript'), and
+- (untested) Windows 10/11 (through Powershell).
+
+ICON is only supported with `notify-send'."
   (declare (indent 1))
   (cond ((executable-find "notify-send")
          (start-process "notify-send" nil
@@ -56,13 +63,8 @@ Supports `notify-send', `termux-notification', and `osascript'."
         ((executable-find "termux-notification")
          (start-process "notify" nil
                         "termux-notification"
-                        "--title" app-name
-                        "--content"
-                        (if (equal "" body)
-                            summary
-                          (format "%s\n\n%s"
-                                  summary
-                                  body))))
+                        "--title" (format "%s: %s" app-name summary)
+                        "--content" body))
         ((executable-find "osascript")
          (start-process
           "notify" nil
