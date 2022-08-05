@@ -1,6 +1,8 @@
-# startup-notification
+# send-notification
 
-Send a desktop notification after startup.
+Send a desktop notification.
+
+This serves as both a library for sending desktop notifications with zero config and a package of integrations.
 
 ## Install
 
@@ -8,14 +10,14 @@ Send a desktop notification after startup.
 (straight-use-package
  '(startup-notification
    :host github
-   :repo "kisaragi-hiu/startup-notification"))
+   :repo "kisaragi-hiu/send-notification"))
 ```
 
 ## Setup
 
 ```elisp
 (when (daemonp)
-  (startup-notification-mode))
+  (send-notification-startup-mode))
 ```
 
 ## Acknowledgements

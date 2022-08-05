@@ -1,9 +1,9 @@
-;;; startup-notification.el --- Package Summary -*- lexical-binding: t -*-
+;;; send-notification.el --- Package Summary -*- lexical-binding: t -*-
 
 ;; Author: Kisaragi Hiu
 ;; Version: 0.1
 ;; Package-Requires: ((emacs "25.1") (s "1.12.0"))
-;; Homepage: https://github.com/kisaragi-hiu/startup-notification
+;; Homepage: https://github.com/kisaragi-hiu/send-notification
 ;; Keywords: convenience
 
 
@@ -34,9 +34,9 @@
 
 ;; Although `notifications' exists, it only supports platforms with
 ;; dbus and, importantly (for me), doesn't support Termux.
-(cl-defun startup-notification--send
+(cl-defun send-notification
     (summary &key (body "") (app-name "Emacs") (icon "emacs"))
-  "Send a system notification.
+  "Send a desktop notification.
 
 The notification ideally looks something like:
 
@@ -117,20 +117,20 @@ $Notifier.Show($Toast);
 ")))
              (delete-process process))))))
 
-(defun startup-notification--signal-startup-complete ()
+(defun send-notification--signal-startup-complete ()
   "Send a startup ready notification."
-  (startup-notification--send "Emacs is ready."))
+  (send-notification "Emacs is ready."))
 
 ;;;###autoload
-(define-minor-mode startup-notification-mode
+(define-minor-mode send-notification-startup-mode
   "Send a notification after startup."
   :global t :lighter "" :group 'initialization
-  (if startup-notification-mode
+  (if send-notification-startup-mode
       (add-hook 'after-init-hook
-                #'startup-notification--signal-startup-complete)
+                #'send-notification--signal-startup-complete)
     (remove-hook 'after-init-hook
-                 #'startup-notification--signal-startup-complete)))
+                 #'send-notification--signal-startup-complete)))
 
-(provide 'startup-notification)
+(provide 'send-notification)
 
-;;; startup-notification.el ends here
+;;; send-notification.el ends here
