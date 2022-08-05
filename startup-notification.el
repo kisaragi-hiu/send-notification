@@ -30,6 +30,7 @@
 ;;; Code:
 
 (require 's)
+(require 'cl-lib)
 
 ;; Although `notifications' exists, it only supports platforms with
 ;; dbus and, importantly (for me), doesn't support Termux.
