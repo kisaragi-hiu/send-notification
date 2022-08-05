@@ -58,6 +58,6 @@ The (attempted) support for Windows is lifted from [alert-toast](https://github.
 
 ## Prior art
 
-- [alert](https://github.com/jwiegley/alert/) is the most full-featured, but it really is a `message` replacement that allows the user to also send it elsewhere. It thus doesn't seem to automatically detect the platform and use the right style for you. To get it to work on Windows you also need an extra package, [alert-toast](https://github.com/gkowzan/alert-toast). This package hopes to provide a function that also provides some convenient functionalities for users.
-- [notify.el](https://github.com/emacsattic/notify) is unmaintained and relies on D-Bus.
-- Builtin [notifications.el](https://git.savannah.gnu.org/cgit/emacs.git/tree/lisp/notifications.el) also relies on D-Bus. This is the best option if you don't need to support macOS or Windows.
+- [alert](https://github.com/jwiegley/alert/) is the most full-featured, but it really is a `message` replacement that allows the user to also send it elsewhere. It thus doesn't seem to automatically detect the platform and use the right style for you. To get it to work on Windows you also need an extra package, [alert-toast](https://github.com/gkowzan/alert-toast).
+- Builtin [notifications.el](https://git.savannah.gnu.org/cgit/emacs.git/tree/lisp/notifications.el) relies on D-Bus. This is the best option if you don't need to support macOS or Windows.
+- [notify.el](https://github.com/emacsattic/notify) is unmaintained and also relies on D-Bus.
