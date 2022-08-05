@@ -24,7 +24,9 @@ Send a notification on startup.
   (send-notification-on-startup-mode))
 ```
 
-### Notify
+![a startup notification](./screenshots/send-notification-on-startup.gif)
+
+### Notify if Magit command fails in the background
 
 When a Magit command encounters an error in the background, send a desktop notification.
 
@@ -32,6 +34,9 @@ When a Magit command encounters an error in the background, send a desktop notif
 (with-eval-after-load 'magit
   (send-notification-on-magit-error-mode))
 ```
+![a notification for Magit background commands that error out](./screenshots/send-notification-magit-background-error.gif)
+
+(Notification is only sent if no Magit buffers are displayed.)
 
 ## Acknowledgements
 
