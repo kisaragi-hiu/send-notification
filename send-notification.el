@@ -119,7 +119,8 @@ $Notifier.Show($Toast);
 
 (defun send-notification--signal-startup-complete ()
   "Send a startup ready notification."
-  (send-notification "Emacs is ready."))
+  (send-notification "Emacs is ready.")
+  (send-notification-startup-mode -1))
 
 ;;;###autoload
 (define-minor-mode send-notification-startup-mode
