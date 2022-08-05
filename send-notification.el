@@ -4,7 +4,7 @@
 ;; Version: 0.1
 ;; Package-Requires: ((emacs "25.1") (s "1.12.0"))
 ;; Homepage: https://github.com/kisaragi-hiu/send-notification
-;; Keywords: convenience
+;; Keywords: convenience desktop notifications
 
 
 ;; This file is not part of GNU Emacs
@@ -120,17 +120,49 @@ $Notifier.Show($Toast);
 (defun send-notification--signal-startup-complete ()
   "Send a startup ready notification."
   (send-notification "Emacs is ready.")
-  (send-notification-startup-mode -1))
+  (send-notification-on-startup-mode -1))
 
 ;;;###autoload
-(define-minor-mode send-notification-startup-mode
+(define-minor-mode send-notification-on-startup-mode
   "Send a notification after startup."
   :global t :lighter "" :group 'initialization
-  (if send-notification-startup-mode
+  (if send-notification-on-startup-mode
       (add-hook 'after-init-hook
                 #'send-notification--signal-startup-complete)
     (remove-hook 'after-init-hook
                  #'send-notification--signal-startup-complete)))
+
+(defun send-notification--on-magit-error-adv (func &rest args)
+  "Advice around `magit-process-error-summary'.
+
+FUNC: the original `magit-process-error-summary'
+ARGS: arguments that are passed to `magit-process-error-summary'"
+  (defvar magit-process-raise-error)
+  (let ((msg (apply func args)))
+    (unless (or magit-process-raise-error
+                (not (stringp msg)) ; msg could be `suppressed'
+                ;; If a Magit buffer is displayed, don't bother
+                (cl-some
+                 (lambda (w)
+                   (provided-mode-derived-p
+                    (buffer-local-value 'major-mode (window-buffer w))
+                    'magit-mode))
+                 (window-list)))
+      (send-notification msg
+        :app-name "Magit"))
+    msg))
+
+;;;###autoload
+(define-minor-mode send-notification-on-magit-error-mode
+  "If a Magit command errors out in the background, notify."
+  :global t :lighter "" :group 'magit
+  (unless (featurep 'magit)
+    (error "Magit is not yet loaded!"))
+  (if send-notification-on-magit-error-mode
+      (advice-add 'magit-process-error-summary
+                  :around #'send-notification--on-magit-error-adv)
+    (advice-remove 'magit-process-error-summary
+                   #'send-notification--on-magit-error-adv)))
 
 (provide 'send-notification)
 
