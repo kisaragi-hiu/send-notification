@@ -1,6 +1,6 @@
 ;;; send-notification.el --- Package Summary -*- lexical-binding: t -*-
 
-;; Author: Kisaragi Hiu
+;; Author: Kisaragi Hiu, Joseph M LaFreniere <joseph@lafreniere.xyz>
 ;; Version: 0.1
 ;; Package-Requires: ((emacs "25.1") (s "1.12.0"))
 ;; Homepage: https://github.com/kisaragi-hiu/send-notification
@@ -31,6 +31,11 @@
 
 (require 's)
 (require 'cl-lib)
+
+(defgroup send-notification nil
+  "Platform-agnostic notification library."
+  :prefix "send-notification"
+  :group 'notification)
 
 ;; Although `notifications' exists, it only supports platforms with
 ;; dbus and, importantly (for me), doesn't support Termux.
