@@ -37,11 +37,11 @@
   :prefix "send-notification"
   :group 'notification)
 
-;; Although `notifications' exists, it only supports platforms with
-;; dbus and, importantly (for me), doesn't support Termux.
-(cl-defun send-notification
-    (summary &key (body "") (app-name "Emacs") (icon "emacs"))
-  "Send a desktop notification.
+(defmacro send-notification--build-entrypoint ()
+  "Define the `send-notification' function for the current platform."
+  `(cl-defun send-notification
+       (summary &key (body "") (app-name "Emacs") (icon "emacs"))
+     "Send a desktop notification.
 
 The notification ideally looks something like:
 
@@ -49,40 +49,33 @@ The notification ideally looks something like:
   SUMMARY
   BODY
 
-Supports:
-
-- platforms with `notify-send',
-- Termux (through `termux-notification')
-- (untested) macOS (through `osascript'), and
-- (untested) Windows 10/11 (through Powershell).
-
 ICON is only supported with `notify-send'."
-  (declare (indent 1))
-  (cond ((executable-find "notify-send")
-         (start-process "notify-send" nil
+     ,(cond
+       ((executable-find "notify-send")
+        '(start-process "notify-send" nil
                         "notify-send"
                         "--icon" icon
                         "--app-name" app-name
                         summary
                         body))
-        ((executable-find "termux-notification")
-         (start-process "notify" nil
+       ((executable-find "termux-notification")
+        '(start-process "notify" nil
                         "termux-notification"
                         "--title" (format "%s: %s" app-name summary)
                         "--content" body))
-        ((executable-find "osascript")
-         (start-process
+       ((executable-find "osascript")
+        '(start-process
           "notify" nil
           "osascript" "-e"
           (format "display notification \"%s\" with title \"%s\" subtitle \"%s\""
                   body
                   app-name
                   summary)))
-        ((executable-find "powershell.exe")
-         ;; This is extracted from alert-toast.el. I have zero idea
-         ;; how to write a powershell script, and it's all lifted from
-         ;; there.
-         (let ((process (make-process
+       ((executable-find "powershell.exe")
+        ;; This is extracted from alert-toast.el. I have zero idea
+        ;; how to write a powershell script, and it's all lifted from
+        ;; there.
+        '(let ((process (make-process
                          :name "powershell"
                          :buffer " *powershell*"
                          :command (list
@@ -122,7 +115,10 @@ $Toast.ExpirationTime = [DateTimeOffset]::Now.AddSeconds(5.000000)
 $Notifier = [Windows.UI.Notifications.ToastNotificationManager]::CreateToastNotifier(\"${app-name}\")
 $Notifier.Show($Toast);
 ")))
-             (delete-process process))))))
+             (delete-process process)))))))
+
+;;;###autoload (autoload 'send-notification "send-notification.el")
+(send-notification--build-entrypoint)
 
 (defun send-notification--signal-startup-complete ()
   "Send a startup ready notification."
