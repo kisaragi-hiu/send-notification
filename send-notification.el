@@ -1,4 +1,4 @@
-;;; send-notification.el --- Package Summary -*- lexical-binding: t -*-
+;;; send-notification.el --- Platform-agnostic notification library -*- lexical-binding: t -*-
 
 ;; Author: Kisaragi Hiu
 ;; Version: 0.1
@@ -25,79 +25,81 @@
 
 ;;; Commentary:
 
-;; commentary
+;; A platform agnostic notification library.
+;;
+;; Although `notifications' exists, it only supports platforms with
+;; dbus.
 
 ;;; Code:
 
 (require 's)
 (require 'cl-lib)
 
-;; Although `notifications' exists, it only supports platforms with
-;; dbus and, importantly (for me), doesn't support Termux.
-(cl-defun send-notification
-    (summary &key (body "") (app-name "Emacs") (icon "emacs"))
-  "Send a desktop notification.
+(defgroup send-notification nil
+  "Platform-agnostic notification library."
+  :group 'notification
+  :prefix "send-notification-")
 
-The notification ideally looks something like:
+;;;###autoload
+(defcustom send-notification-function
+  (cond
+   ((executable-find "notify-send") #'send-notification--notify-send)
+   ((executable-find "termux-notification") #'send-notification--termux)
+   ((executable-find "osascript") #'send-notification--macos)
+   ;; FIXME: We should use `w32-notification-notify' on Windows < 10
+   ((executable-find "powershell.exe") #'send-notification--windows))
+  "Function used to actually send the notification.
 
-  <ICON> APP-NAME
-  SUMMARY
-  BODY
+The function has the signature (ICON APP-NAME SUMMARY BODY). See
+function `send-notification' for their definitions."
+  :group 'send-notification
+  :type 'function)
 
-Supports:
-
-- platforms with `notify-send',
-- Termux (through `termux-notification')
-- (untested) macOS (through `osascript'), and
-- (untested) Windows 10/11 (through Powershell).
-
-ICON is only supported with `notify-send'."
-  (declare (indent 1))
-  (cond ((executable-find "notify-send")
-         (start-process "notify-send" nil
-                        "notify-send"
-                        "--icon" icon
-                        "--app-name" app-name
-                        summary
-                        body))
-        ((executable-find "termux-notification")
-         (start-process "notify" nil
-                        "termux-notification"
-                        "--title" (format "%s: %s" app-name summary)
-                        "--content" body))
-        ((executable-find "osascript")
-         (start-process
-          "notify" nil
-          "osascript" "-e"
-          (format "display notification \"%s\" with title \"%s\" subtitle \"%s\""
-                  body
-                  app-name
-                  summary)))
-        ((executable-find "powershell.exe")
-         ;; This is extracted from alert-toast.el. I have zero idea
-         ;; how to write a powershell script, and it's all lifted from
-         ;; there.
-         (let ((process (make-process
-                         :name "powershell"
-                         :buffer " *powershell*"
-                         :command (list
-                                   "powershell.exe"
-                                   "-noprofile" "-NoExit" "-NonInteractive"
-                                   "-WindowStyle" "Hidden"
-                                   "-Command" "-")
-                         :noquery t
-                         :connection-type 'pipe)))
-           (unwind-protect
-               (progn
-                 (process-send-string
-                  process
-                  "
+;;;; Handlers
+(defun send-notification--notify-send (icon app-name summary body)
+  (start-process "notify-send" nil
+                 "notify-send"
+                 "--icon" icon
+                 "--app-name" app-name
+                 summary
+                 body))
+(defun send-notification--termux (_icon app-name summary body)
+  (start-process "termux-notification" nil
+                 "termux-notification"
+                 "--title" (format "%s: %s" app-name summary)
+                 "--content" body))
+(defun send-notification--macos (_icon app-name summary body)
+  (start-process
+   "osascript" nil
+   "osascript" "-e"
+   (format "display notification \"%s\" with title \"%s\" subtitle \"%s\""
+           body
+           app-name
+           summary)))
+(defun send-notification--windows (_icon app-name summary body)
+  ;; This is extracted from alert-toast.el. I have zero idea how to
+  ;; write a powershell script, and it's all lifted from there.
+  (let ((process (make-process
+                  :name "powershell"
+                  :buffer " *powershell*"
+                  :command (list
+                            "powershell.exe"
+                            "-noprofile" "-NoExit" "-NonInteractive"
+                            "-WindowStyle" "Hidden"
+                            "-Command" "-")
+                  :noquery t
+                  :connection-type 'pipe)))
+    (unwind-protect
+        (progn
+          (process-send-string
+           process
+           "
 [Windows.UI.Notifications.ToastNotificationManager, Windows.UI.Notifications, ContentType = WindowsRuntime] > $null
 [Windows.Data.Xml.Dom.XmlDocument, Windows.Data.Xml, ContentType=WindowsRuntime] > $null
 ")
-                 (process-send-string
-                  process
-                  (s-lex-format "
+          (process-send-string
+           process
+           (s-lex-format "
 $Xml = New-Object Windows.Data.Xml.Dom.XmlDocument
 $Xml.LoadXml('
 <toast><visual>
@@ -117,8 +119,26 @@ $Toast.ExpirationTime = [DateTimeOffset]::Now.AddSeconds(5.000000)
 $Notifier = [Windows.UI.Notifications.ToastNotificationManager]::CreateToastNotifier(\"${app-name}\")
 $Notifier.Show($Toast);
 ")))
-             (delete-process process))))))
+      (delete-process process))))
 
+;;;; Entry point
+(cl-defun send-notification
+    (summary &key (body "") (app-name "Emacs") (icon "emacs"))
+  "Send a desktop notification.
+
+The notification ideally looks something like:
+
+  <ICON> APP-NAME
+  SUMMARY
+  BODY
+
+ICON is a file path or a freedesktop stock icon name. Currently
+only the `send-notification--notify-send' handler uses it."
+  (declare (indent 1))
+  (funcall send-notification-function icon app-name summary body))
+
+;;;; Integrations
+;;;;; Startup notification
 (defun send-notification--signal-startup-complete ()
   "Send a startup ready notification."
   (send-notification "Emacs is ready.")
@@ -127,13 +147,14 @@ $Notifier.Show($Toast);
 ;;;###autoload
 (define-minor-mode send-notification-on-startup-mode
   "Send a notification after startup."
-  :global t :lighter "" :group 'initialization
+  :global t :lighter "" :group 'send-notification
   (if send-notification-on-startup-mode
       (add-hook 'after-init-hook
                 #'send-notification--signal-startup-complete)
     (remove-hook 'after-init-hook
                  #'send-notification--signal-startup-complete)))
 
+;;;;; Magit background error notification
 (defun send-notification--on-magit-error-adv (func &rest args)
   "Advice around `magit-process-error-summary'.
 
@@ -157,7 +178,7 @@ ARGS: arguments that are passed to `magit-process-error-summary'"
 ;;;###autoload
 (define-minor-mode send-notification-on-magit-error-mode
   "If a Magit command errors out in the background, notify."
-  :global t :lighter "" :group 'magit
+  :global t :lighter "" :group 'send-notification
   (unless (featurep 'magit)
     (error "Magit is not yet loaded!"))
   (if send-notification-on-magit-error-mode
