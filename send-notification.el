@@ -122,6 +122,7 @@ $Notifier.Show($Toast);
       (delete-process process))))
 
 ;;;; Entry point
+;;;###autoload
 (cl-defun send-notification
     (summary &key (body "") (app-name "Emacs") (icon "emacs"))
   "Send a desktop notification.
